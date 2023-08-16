@@ -1,10 +1,15 @@
 import json
 import os
 import re
+
+import math
+import requests
+from bs4 import BeautifulSoup
 from time import sleep, time
 from selenium import webdriver
 from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
+from urllib3.util import url
 
 from constants import districts, type_org_mapping
 
@@ -50,43 +55,94 @@ class CardSearcher:
         self.slider = None
         self.link = link
 
+    def accept_cookie(self):
+        acc = self.driver.find_element(By.CLASS_NAME, '_euwdl0').click
+
+    def make_dirs(self):
+        directory = f'links/test/{type_org}'
+        company_collection = 'links/href_collection'
+        # Проверяем, существует ли файл и директории
+        if not os.path.exists(company_collection):
+            os.makedirs(company_collection)
+
     def page_parsing(self, city, district, type_org_ru, type_org):
         self.driver.get(self.link)
+        self.driver.maximize_window()
+        self.accept_cookie()
+        self.make_dirs()
+
+        hrefs_district = []
         # Запрос
         request = city + ' ' + district + ' ' + type_org_ru
-        find_button = driver.find_element(By.CLASS_NAME, '_1gvu1zk')
+        sleep(1)
+        find_button = self.driver.find_element(By.CLASS_NAME, '_1gvu1zk')
         find_button.send_keys(request, Keys.ENTER)
         sleep(0.5)
         # включение сортировки по новизне
-        find_sort = driver.find_element(By.CSS_SELECTOR, 'input._1e4yjns[type="text"][placeholder="Сортировка"]')
+        find_sort = self.driver.find_element(By.CSS_SELECTOR, 'input._1e4yjns[type="text"][placeholder="Сортировка"]')
         find_sort.send_keys('По новизне', Keys.ENTER)
 
         sleep(0.3)
         # поиск количества точек
-        find_places = driver.find_element(By.XPATH, '//div[@class="_nude0k3"]/a[@class="_rdxuhv3"]').text
+        find_places = self.driver.find_element(By.XPATH, '//div[@class="_nude0k3"]/a[@class="_rdxuhv3"]').text
         number_places = int(''.join(filter(str.isdigit, find_places)))
         print(f'Места: {number_places}')
-
+        i = 1
+        lim = (number_places / 12).__ceil__()
         # поиск и сбор ссылок на компании
-        find_cards = driver.find_element(By.CLASS_NAME, '_z72pvu')
-        link_elements = find_cards.find_elements(By.CSS_SELECTOR, 'a')
-        hrefs = [href.get_attribute('href') for href in link_elements]
+        while '/filters/sort%3Dopened_time' not in driver.current_url:
+            sleep(0.001)
+        while not i > lim:
+            sleep(0.5)
+            current_url = driver.current_url
+            next_page = current_url.replace("/filters/sort%3Dopened_time", f"/filters/sort%3Dopened_time/page/{i}")
+            driver.get(next_page)
+            # print(next_page)
 
-        # чистка ссылок от рекламы
-        hrefs = filter_links(hrefs)
-        print(len(hrefs))
+            find_cards = self.driver.find_element(By.CLASS_NAME, '_z72pvu').find_element(By.CLASS_NAME, '_awwm2v')
+            link_elements = find_cards.find_elements(By.CSS_SELECTOR, 'a')
+            hrefs = [href.get_attribute('href') for href in link_elements]
+
+            # чистка ссылок от рекламы
+            hrefs = filter_links(hrefs)
+            hrefs_district += hrefs
+
+            hrefs_district = list(set(hrefs_district))
+            print(len(list(set(hrefs_district))))
+            i = i + 1
+
+        for href in hrefs_district:
+            match = re.search(r'(https://2gis\.ru/moscow/firm/\d+)', href)
+            if match:
+                unique_hrefs.append(match.group(1))
+        try:
+            with open(f'links/href_collection/companies.json', 'r', encoding='utf-8') as f:
+                hrefs = json.load(f)['1']
+            old_hrefs = list(hrefs)
+        except Exception:
+            old_hrefs = []
+
+        # Находим записи, которые отсутствуют в старом списке
+        hrefs_add = [record for record in unique_hrefs if record not in hrefs]
+        old_hrefs.append(hrefs_add)
+        print(f'Unique: {len(hrefs_add)}')
 
         directory = f'links/test/{type_org}'
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        with open(f'links/test/{type_org}/{request}.json', 'w') as file:
-            json.dump({'1': hrefs}, file)
+        company_collection = 'links/href_collection'
 
-        pass
+        # Проверяем, существует ли файл и директории
+        if not os.path.exists(company_collection):
+            os.makedirs(company_collection)
+        with open(f'links/href_collection/companies.json', 'w') as file:
+            json.dump({'1': old_hrefs}, file)
+        with open(f'links/test/{type_org}/{request}.json', 'w') as file:
+            json.dump({'1': unique_hrefs}, file)
 
 
 if __name__ == '__main__':
     start_time = time()
+    unique_hrefs = []
+
     for type_org in ['sport']:
         i = 0
         # for district in districts:
@@ -99,5 +155,5 @@ if __name__ == '__main__':
                                  type_org=type_org)
 
     end_time = time()
-    print(f'{(end_time - start_time):.1f} секунды на выполение')
+    print(f'Прошло времени: {(end_time - start_time):.1f}')
     # asyncio.run(main())
