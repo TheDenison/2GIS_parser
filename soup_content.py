@@ -1,4 +1,7 @@
+import asyncio
 import re
+
+
 from time import sleep
 from urllib.parse import urljoin, urlparse
 
@@ -234,7 +237,6 @@ class SoupContent(object):
                     if ip and inn != '':
                         str_full = f'{ip} \n{inn}'
                         break
-
             if not str_full and str_half:
                 return str_half
 

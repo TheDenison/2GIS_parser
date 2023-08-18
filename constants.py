@@ -30,7 +30,10 @@ type_org_mapping = {
     'second': 'Секонд-хенд',
     'furniture': "мебель на заказ",
     'design': "дизайн интерьеров",
-    'repair': "ремонт квартир"
+    'repair': "ремонт квартир",
+
+    'RIP': "ритуальные услуги",
+    'flowers_delivery': 'доставка цветов'
 }
 
 districts = [

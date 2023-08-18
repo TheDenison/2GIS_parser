@@ -1,22 +1,16 @@
 import datetime
 import json
-import os
 import random
 import re
+
 from urllib.parse import urlparse
-import pandas as pd
+from save_to_exel import table_exel
 from soup_content import SoupContent
-import math
-import requests
 from bs4 import BeautifulSoup
 from time import sleep, time
 from selenium import webdriver
 from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
-from urllib3.util import url
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
-
 from constants import districts, type_org_mapping
 
 
@@ -87,7 +81,7 @@ class Parser:
                         ip_inn = ''
                     print(f'ИН/ИНН: {ip_inn}\n')
 
-                output = [org_id, category, name, address, website, ip_inn, branch, twogis,
+                output = [org_id, category, name, branch, address, website, ip_inn, station, twogis,
                           rating, reviews, phones, email]
                 outputs.append(output)
                 if len(outputs) % 50 == 0:
@@ -109,14 +103,13 @@ class Parser:
                 self.driver.maximize_window()
                 self.driver.get('https://2gis.ru/moscow')
                 parent_handle = self.driver.window_handles[0]
-        self.table_exel(outputs)
+        table_exel(outputs)
         print('Данные сохранены')
         # self.driver.quit()
 
     def get_phones(self):
         phones = ""
         try:
-            # while not phones:
             self.driver.find_element(By.CLASS_NAME, '_1ns0i7c').click()
             phone_elements = self.driver.find_elements(By.XPATH, '//div[@class="_b0ke8"]/a[contains(@href, "tel:")]')
             phones = [elem.get_attribute('href').replace('tel:', '') for elem in phone_elements]
@@ -125,33 +118,6 @@ class Parser:
             return phones
         except:
             return phones
-
-    def table_exel(self, data):
-        # Создание новой книги и листа
-        wb = Workbook()
-        ws = wb.active
-
-        # Задание шаблона для заголовка
-        header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill("solid", fgColor="4F81BD")
-
-        headers = ["ID", "Название", "Адрес", "Сайт", "ИП/ИНН", "Остановка", "Ссылка", "Рейтинг", "Отзывы", "Телефон",
-                   "Email"]
-
-        for col_num, header in enumerate(headers, 1):
-            col_letter = chr(64 + col_num)
-            cell = ws[f"{col_letter}1"]
-            cell.value = header
-            cell.font = header_font
-            cell.fill = header_fill
-
-        for row_num, row_data in enumerate(data, 2):
-            for col_num, cell_data in enumerate(row_data, 1):
-                ws.cell(row=row_num, column=col_num, value=cell_data)
-
-        # Сохраняем файл
-        wb.save("sample.xlsx")
-        # Добавляем данные (это можно сделать согласно вашему шаблону)
 
 
 class CardSearcher:
@@ -169,7 +135,7 @@ class CardSearcher:
 
     def check_new_firm(self, city, district, type_org_ru, type_org):
         self.driver.get(self.link)
-        self.driver.maximize_window()
+        # self.driver.maximize_window()
         try:
             with open('firms_dict.json') as file:
                 firm_list = json.load(file)
@@ -182,7 +148,7 @@ class CardSearcher:
         hrefs_district = []
         # Запрос
         request = city + ' ' + district + ' ' + type_org_ru
-        sleep(1)
+        sleep(0.5)
         find_button = self.driver.find_element(By.CLASS_NAME, '_1gvu1zk')
         find_button.send_keys(request, Keys.ENTER)
         sleep(0.5)
@@ -190,11 +156,11 @@ class CardSearcher:
         find_sort = self.driver.find_element(By.CSS_SELECTOR, 'input._1e4yjns[type="text"][placeholder="Сортировка"]')
         find_sort.send_keys('По новизне', Keys.ENTER)
 
-        sleep(0.3)
-        # поиск количества точек
-        find_places = self.driver.find_element(By.XPATH, '//div[@class="_nude0k3"]/a[@class="_rdxuhv3"]').text
-        number_places = int(''.join(filter(str.isdigit, find_places)))
-        print(f'Места: {number_places}')
+        # sleep(0.3)
+        # # поиск количества точек
+        # find_places = self.driver.find_element(By.XPATH, '//div[@class="_nude0k3"]/a[@class="_rdxuhv3"]').text
+        # number_places = int(''.join(filter(str.isdigit, find_places)))
+        # print(f'Места: {number_places}')
 
         # поиск и сбор ссылок на компании
         while '/filters/sort%3Dopened_time' not in self.driver.current_url:
@@ -242,11 +208,10 @@ class CardSearcher:
 
 def update_list():
     fresh_firms_list = {}
-    for type_org in ['sport', 'flowers']:
+    for type_org in ['flowers', 'flowers_delivery']:
         i = 0
-
-        # for district in districts:
-        for district in ['Район сокол']:
+        for district in districts:
+        # for district in ['Район сокол']:
             i += 1
             print(f"[INFO] Район: {i}/{len(districts)}")
             driver = webdriver.Chrome()
@@ -255,19 +220,19 @@ def update_list():
                                                  type_org_ru=type_org_mapping[type_org],
                                                  type_org=type_org)
             fresh_firms_list.update(fresh_firms)
-            if fresh_firms_list != 0:
-                print(f'[Новыe записи] {district}: {len(fresh_firms_list)}')
-            # if new_firms != 0:
-            #     print(f'Новых записей: {len(new_firms)}')
-            #     parse_info()
-            #     ss = [i['url'] for i in new_firms.values()]
-            #     for s in ss:
-            #         print(s)
+            if len(fresh_firms) != 0:
+                print(f'[INFO] [Новыe записи] {district}: {len(fresh_firms)}')
 
     with open(f"fresh_firms_dict.json", 'w') as file:
         json.dump(fresh_firms_list, file, indent=1, ensure_ascii=False)
     with open(f"backups/fresh_firms_dict_{cur_time}.json", 'w') as file:
         json.dump(fresh_firms_list, file, indent=1, ensure_ascii=False)
+
+    if len(fresh_firms_list) != 0:
+        print(f'[INFO] Добавлено записей: {len(fresh_firms_list)}')
+    else:
+        print("[INFO] Новых записей не найдено.")
+
 
 
 def parse_info():
@@ -288,8 +253,13 @@ if __name__ == '__main__':
     start_time = time()
     cur_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
     # first_run()
-    # update_list()
-    parse_info()
+    update_list()
+    # parse_info()
 
     end_time = time()
-    print(f'Прошло времени: {(end_time - start_time):.1f}')
+    elapsed_time = end_time - start_time
+    if elapsed_time > 60:
+        elapsed_time = elapsed_time/60
+        print(f'Прошло времени: {elapsed_time:.1f} минут')
+    else:
+        print(f'Прошло времени: {elapsed_time:.1f} секунд')
