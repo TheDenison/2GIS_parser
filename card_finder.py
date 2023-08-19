@@ -19,12 +19,6 @@ def filter_links(hrefs):
     return [href for href in hrefs if pattern.match(href)]
 
 
-# def check_new_firm():
-#     with open('firms_dict.json') as file:
-#         firms_list = json.load(file)
-#     print(firms_list)
-
-
 class Parser:
     def __init__(self, driver):
         self.driver = driver
@@ -121,7 +115,8 @@ class Parser:
             phone_elements = self.driver.find_elements(By.XPATH, '//div[@class="_b0ke8"]/a[contains(@href, "tel:")]')
             phones = [elem.get_attribute('href').replace('tel:', '') for elem in phone_elements]
             phones = '\n'.join(phones)
-            sleep(1)
+            if ",,," in phones:
+                phones = re.sub(',,,.*', '', phones)
             return phones
         except:
             return phones
@@ -143,6 +138,7 @@ class CardSearcher:
     def check_new_firm(self, city, district, type_org_ru, type_org):
         self.driver.get(self.link)
         self.driver.maximize_window()
+
         try:
             with open('firms_dict.json') as file:
                 firm_list = json.load(file)
@@ -155,13 +151,16 @@ class CardSearcher:
         hrefs_district = []
         # Запрос
         request = city + ' ' + district + ' ' + type_org_ru
+        print(request)
         sleep(0.5)
         find_button = self.driver.find_element(By.CLASS_NAME, '_1gvu1zk')
         find_button.send_keys(request, Keys.ENTER)
         sleep(0.5)
-        # включение сортировки по новизне
-        find_sort = self.driver.find_element(By.CSS_SELECTOR, 'input._1e4yjns[type="text"][placeholder="Сортировка"]')
-        find_sort.send_keys('По новизне', Keys.ENTER)
+        try:
+            # включение сортировки по новизне
+            find_sort = self.driver.find_element(By.CSS_SELECTOR, 'input._1e4yjns[type="text"][placeholder="Сортировка"]')
+            find_sort.send_keys('По новизне', Keys.ENTER)
+
 
         # sleep(0.3)
         # # поиск количества точек
@@ -170,8 +169,11 @@ class CardSearcher:
         # print(f'Места: {number_places}')
 
         # поиск и сбор ссылок на компании
-        while '/filters/sort%3Dopened_time' not in self.driver.current_url:
-            sleep(0.001)
+            while '/filters/sort%3Dopened_time' not in self.driver.current_url:
+                sleep(0.001)
+        except Exception:
+            print("skip sort")
+            pass
 
         find_cards = self.driver.find_element(By.CLASS_NAME, '_z72pvu').find_element(By.CLASS_NAME, '_awwm2v')
         link_elements = find_cards.find_elements(By.CSS_SELECTOR, 'a')
@@ -215,14 +217,16 @@ class CardSearcher:
 
 def update_list():
     fresh_firms_list = {}
-    for type_org in ['coffee', 'coffee_to_go', 'coffee_takeaway']:
+    for type_org in ['marry', 'optics']:
         i = 0
+        driver = webdriver.Chrome()
+        grabber = CardSearcher(driver)
         for district in districts:
             # for district in ['Район сокол']:
             i += 1
             print(f"[INFO] Район: {i}/{len(districts)}")
-            driver = webdriver.Chrome()
-            grabber = CardSearcher(driver)
+            # driver = webdriver.Chrome()
+            # grabber = CardSearcher(driver)
             fresh_firms = grabber.check_new_firm(city="Москва", district=district,
                                                  type_org_ru=type_org_mapping[type_org],
                                                  type_org=type_org)

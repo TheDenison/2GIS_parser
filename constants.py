@@ -20,7 +20,6 @@ type_org_mapping = {
     'nails': 'Ногтевая студия',
     'build': 'Cтроительная компания',
     'flowers': 'Цветочный Магазин',
-    'optics': 'Салон оптики',
     'candy': 'Кондитерская',
     'vish': 'Студия вышивки',
     'second': 'Секонд-хенд',
@@ -32,7 +31,9 @@ type_org_mapping = {
     'coffee': 'Кофейня',
     'coffee_to_go': 'Кофе с собой',
     'coffee_takeaway': 'Кофе на вынос',
-    'flowers_delivery': 'доставка цветов'
+    'flowers_delivery': 'доставка цветов',
+    'optics': 'Салон оптики',
+    'marry': 'свадебный салон'
 
 }
 
