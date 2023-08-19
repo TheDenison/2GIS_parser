@@ -84,16 +84,22 @@ class Parser:
                 output = [org_id, category, name, branch, address, website, ip_inn, station, twogis,
                           rating, reviews, phones, email]
                 outputs.append(output)
+                if len(outputs) % 100 == 0 or org_id == len(urls) or org_id == 5:
+                    print('Сохранение...')
+                    table_exel(outputs)
+                    print('Сохранено!')
+                print(f'[INFO] {org_id} | {len(urls)} | {((org_id / len(urls)) * 100):.3f}%')
+
                 if len(outputs) % 50 == 0:
                     self.driver.quit()
-                    sleep(random.uniform(2.2, 2.4))
+                    sleep(random.uniform(1.2, 1.4))
                     self.driver = webdriver.Chrome()
                     self.driver.maximize_window()
                     self.driver.get('https://2gis.ru/moscow')
                     parent_handle = self.driver.window_handles[0]
 
                 self.driver.switch_to.window(parent_handle)
-                sleep(random.uniform(0.2, 0.4))
+                sleep(random.uniform(0.1, 0.2))
 
             except:
                 print('except')
@@ -103,9 +109,10 @@ class Parser:
                 self.driver.maximize_window()
                 self.driver.get('https://2gis.ru/moscow')
                 parent_handle = self.driver.window_handles[0]
+        print('Сохранение...')
         table_exel(outputs)
-        print('Данные сохранены')
-        # self.driver.quit()
+        print('Сохранено!')
+        self.driver.quit()
 
     def get_phones(self):
         phones = ""
@@ -135,7 +142,7 @@ class CardSearcher:
 
     def check_new_firm(self, city, district, type_org_ru, type_org):
         self.driver.get(self.link)
-        # self.driver.maximize_window()
+        self.driver.maximize_window()
         try:
             with open('firms_dict.json') as file:
                 firm_list = json.load(file)
@@ -208,10 +215,10 @@ class CardSearcher:
 
 def update_list():
     fresh_firms_list = {}
-    for type_org in ['flowers', 'flowers_delivery']:
+    for type_org in ['coffee', 'coffee_to_go', 'coffee_takeaway']:
         i = 0
         for district in districts:
-        # for district in ['Район сокол']:
+            # for district in ['Район сокол']:
             i += 1
             print(f"[INFO] Район: {i}/{len(districts)}")
             driver = webdriver.Chrome()
@@ -234,7 +241,6 @@ def update_list():
         print("[INFO] Новых записей не найдено.")
 
 
-
 def parse_info():
     try:
         with open('fresh_firms_dict.json') as file:
@@ -246,6 +252,7 @@ def parse_info():
     parser = Parser(driver)
     for k, v in firm_list.items():
         urls.append(f"{v['url']}")
+    print(f"Всего ссылок: {len(urls)}")
     parser.host(urls)
 
 
@@ -254,12 +261,12 @@ if __name__ == '__main__':
     cur_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
     # first_run()
     update_list()
-    # parse_info()
+    parse_info()
 
     end_time = time()
     elapsed_time = end_time - start_time
     if elapsed_time > 60:
-        elapsed_time = elapsed_time/60
+        elapsed_time = elapsed_time / 60
         print(f'Прошло времени: {elapsed_time:.1f} минут')
     else:
         print(f'Прошло времени: {elapsed_time:.1f} секунд')
