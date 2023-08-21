@@ -1,11 +1,6 @@
-import asyncio
 import re
 
-
-from time import sleep
-from urllib.parse import urljoin, urlparse
-
-from constants import MY_HEADERS, LINK_NAMES, STATIONS, SITE_PATTERNS
+from utils.constants import MY_HEADERS, LINK_NAMES, STATIONS, SITE_PATTERNS
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse

@@ -33,7 +33,9 @@ type_org_mapping = {
     'coffee_takeaway': 'Кофе на вынос',
     'flowers_delivery': 'доставка цветов',
     'optics': 'Салон оптики',
-    'marry': 'свадебный салон'
+    'marry': 'свадебный салон',
+    'vape': 'вейп-шоп',
+    'intim': 'секс-шопы'
 
 }
 

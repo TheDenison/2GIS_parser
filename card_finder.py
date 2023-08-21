@@ -4,14 +4,14 @@ import random
 import re
 
 from urllib.parse import urlparse
-from save_to_exel import table_exel
+from utils.save_to_exel import table_exel
 from soup_content import SoupContent
 from bs4 import BeautifulSoup
 from time import sleep, time
 from selenium import webdriver
 from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
-from constants import districts, type_org_mapping
+from utils.constants import districts, type_org_mapping
 
 
 def filter_links(hrefs):
@@ -62,7 +62,6 @@ class Parser:
                 phones = self.get_phones()
                 # phone = self.soup_data.get_phone(soup)
                 print(f'Номер: {phones}')
-
                 station = self.soup_data.get_station(soup)
                 print(f'Станция: {station}')
 
@@ -128,13 +127,6 @@ class CardSearcher:
         self.slider = None
         self.link = link
 
-    # def make_dirs(self):
-    #     directory = f'links/test/{type_org}'
-    #     company_collection = 'links/href_collection'
-    #     # Проверяем, существует ли файл и директории
-    #     if not os.path.exists(company_collection):
-    #         os.makedirs(company_collection)
-
     def check_new_firm(self, city, district, type_org_ru, type_org):
         self.driver.get(self.link)
         self.driver.maximize_window()
@@ -161,7 +153,6 @@ class CardSearcher:
             find_sort = self.driver.find_element(By.CSS_SELECTOR, 'input._1e4yjns[type="text"][placeholder="Сортировка"]')
             find_sort.send_keys('По новизне', Keys.ENTER)
 
-
         # sleep(0.3)
         # # поиск количества точек
         # find_places = self.driver.find_element(By.XPATH, '//div[@class="_nude0k3"]/a[@class="_rdxuhv3"]').text
@@ -174,50 +165,38 @@ class CardSearcher:
         except Exception:
             print("skip sort")
             pass
+        try:
+            find_cards = self.driver.find_element(By.CLASS_NAME, '_z72pvu').find_element(By.CLASS_NAME, '_awwm2v')
+            link_elements = find_cards.find_elements(By.CSS_SELECTOR, 'a')
+            hrefs = [href.get_attribute('href') for href in link_elements]
 
-        find_cards = self.driver.find_element(By.CLASS_NAME, '_z72pvu').find_element(By.CLASS_NAME, '_awwm2v')
-        link_elements = find_cards.find_elements(By.CSS_SELECTOR, 'a')
-        hrefs = [href.get_attribute('href') for href in link_elements]
+            # чистка ссылок от рекламы
+            hrefs = filter_links(hrefs)
+            hrefs_district += hrefs
+            hrefs_district = list(set(hrefs_district))
+            for href in hrefs_district:
+                clean_url = href.split('?stat')[0]
+                firm_id = href.split('/firm/')[1].split('?')[0]
+                if firm_id in firm_list:
+                    continue
+                else:
+                    firm_list[firm_id] = {
+                        'url': clean_url
+                    }
 
-        # чистка ссылок от рекламы
-        hrefs = filter_links(hrefs)
-        hrefs_district += hrefs
-        hrefs_district = list(set(hrefs_district))
-        for href in hrefs_district:
-            clean_url = href.split('?stat')[0]
-            firm_id = href.split('/firm/')[1].split('?')[0]
-            if firm_id in firm_list:
-                continue
-            else:
-                firm_list[firm_id] = {
-                    'url': clean_url
-                }
-
-                fresh_firms[firm_id] = {
-                    'url': clean_url
-                }
-        with open("firms_dict.json", 'w') as file:
-            json.dump(firm_list, file, indent=1, ensure_ascii=False)
-
+                    fresh_firms[firm_id] = {
+                        'url': clean_url
+                    }
+            with open("firms_dict.json", 'w') as file:
+                json.dump(firm_list, file, indent=1, ensure_ascii=False)
+        except Exception:
+            print(f'Район {district} пропущен!')
         return fresh_firms
-
-
-# def first_run():
-#     for type_org in ['sport']:
-#         i = 0
-#         # for district in districts:
-#         for district in ['Район сокол']:
-#             i += 1
-#             print(f"[INFO] Район: {i}/{len(districts)}")
-#             driver = webdriver.Chrome()
-#             grabber = CardSearcher(driver)
-#             grabber.page_parsing(city="Москва", district=district, type_org_ru=type_org_mapping[type_org],
-#                                  type_org=type_org)
 
 
 def update_list():
     fresh_firms_list = {}
-    for type_org in ['marry', 'optics']:
+    for type_org in ["vape"]:
         i = 0
         driver = webdriver.Chrome()
         grabber = CardSearcher(driver)
@@ -225,8 +204,6 @@ def update_list():
             # for district in ['Район сокол']:
             i += 1
             print(f"[INFO] Район: {i}/{len(districts)}")
-            # driver = webdriver.Chrome()
-            # grabber = CardSearcher(driver)
             fresh_firms = grabber.check_new_firm(city="Москва", district=district,
                                                  type_org_ru=type_org_mapping[type_org],
                                                  type_org=type_org)

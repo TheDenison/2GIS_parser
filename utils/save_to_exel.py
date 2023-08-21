@@ -23,29 +23,29 @@ def table_exel(data):
     branch_13_fill = PatternFill(start_color="006BB0", end_color="006BB0", fill_type="solid")
     branch_14_fill = PatternFill(start_color="EDA3A1", end_color="EDA3A1", fill_type="solid")
     branch_15_fill = PatternFill(start_color="E583AE", end_color="E583AE", fill_type="solid")
-    branch_17_MCD_1_fill = PatternFill(start_color="EB9E00", end_color="EB9E00", fill_type="solid")
-    branch_18_MCD_2_fill = PatternFill(start_color="DF6193", end_color="DF6193", fill_type="solid")
-    branch_19_MCD_3_fill = PatternFill(start_color="E75A0C", end_color="E75A0C", fill_type="solid")
+    branch_17_mcd_1_fill = PatternFill(start_color="EB9E00", end_color="EB9E00", fill_type="solid")
+    branch_18_mcd_2_fill = PatternFill(start_color="DF6193", end_color="DF6193", fill_type="solid")
+    branch_19_mcd_3_fill = PatternFill(start_color="E75A0C", end_color="E75A0C", fill_type="solid")
 
     branches = {
-        tuple(BRANCH_1): branch_1_fill,
-        tuple(BRANCH_2): branch_2_fill,
-        tuple(BRANCH_3): branch_3_fill,
-        tuple(BRANCH_4): branch_4_fill,
-        tuple(BRANCH_5): branch_5_fill,
-        tuple(BRANCH_6): branch_6_fill,
-        tuple(BRANCH_7): branch_7_fill,
-        tuple(BRANCH_8): branch_8_fill,
-        tuple(BRANCH_9): branch_9_fill,
-        tuple(BRANCH_10): branch_10_fill,
-        tuple(BRANCH_11): branch_11_fill,
-        tuple(BRANCH_12): branch_12_fill,
-        tuple(BRANCH_13): branch_13_fill,
-        tuple(BRANCH_14): branch_14_fill,
+        tuple(BRANCH_19_MCD_3): branch_19_mcd_3_fill,
+        tuple(BRANCH_18_MCD_2): branch_18_mcd_2_fill,
+        tuple(BRANCH_17_MCD_1): branch_17_mcd_1_fill,
         tuple(BRANCH_15): branch_15_fill,
-        tuple(BRANCH_17_MCD_1): branch_17_MCD_1_fill,
-        tuple(BRANCH_18_MCD_2): branch_18_MCD_2_fill,
-        tuple(BRANCH_19_MCD_3): branch_19_MCD_3_fill,
+        tuple(BRANCH_14): branch_14_fill,
+        tuple(BRANCH_13): branch_13_fill,
+        tuple(BRANCH_12): branch_12_fill,
+        tuple(BRANCH_11): branch_11_fill,
+        tuple(BRANCH_10): branch_10_fill,
+        tuple(BRANCH_9): branch_9_fill,
+        tuple(BRANCH_8): branch_8_fill,
+        tuple(BRANCH_7): branch_7_fill,
+        tuple(BRANCH_6): branch_6_fill,
+        tuple(BRANCH_5): branch_5_fill,
+        tuple(BRANCH_4): branch_4_fill,
+        tuple(BRANCH_3): branch_3_fill,
+        tuple(BRANCH_2): branch_2_fill,
+        tuple(BRANCH_1): branch_1_fill,
     }
 
     # Задание шаблона для заголовка
@@ -83,7 +83,7 @@ def table_exel(data):
                     max_length = len(cell.value)
             except:
                 pass
-        adjusted_width = max_length
+        adjusted_width = (max_length + 2)
         ws.column_dimensions[column[0].column_letter].width = adjusted_width
 
         # Танируем ячейки
