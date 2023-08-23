@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import json
 import random
@@ -5,6 +6,7 @@ import re
 
 from urllib.parse import urlparse
 from utils.save_to_exel import table_exel
+from utils.save_to_json import table_json
 from soup_content import SoupContent
 from bs4 import BeautifulSoup
 from time import sleep, time
@@ -41,29 +43,29 @@ class Parser:
 
                 org_id += 1
                 name = self.soup_data.get_name(soup)
-                print(f"название: {name}")
+                # print(f"название: {name}")
                 address = self.soup_data.get_address(soup)
-                print(f'адрес: {address}')
+                # print(f'адрес: {address}')
                 link = website = self.soup_data.get_website(soup)
-                print(f'сайт: {website}')
+                # print(f'сайт: {website}')
                 twogis = self.driver.current_url
-                print(f'сслыка: {twogis}')
+                # print(f'сслыка: {twogis}')
                 rating = self.soup_data.get_rating(soup)
-                print(f'Оценка: {rating}')
+                # print(f'Оценка: {rating}')
                 email = self.soup_data.get_email(soup)
-                print(f'Емаил: {email}')
+                # print(f'Емаил: {email}')
                 branch = self.soup_data.get_branch(soup)
-                print(f'Филиалы: {branch}')
+                # print(f'Филиалы: {branch}')
                 ip_inn = ''
                 reviews = self.soup_data.get_reviews(soup)
-                print(f'Отзывы: {reviews}')
+                # print(f'Отзывы: {reviews}')
                 category = self.soup_data.get_category(soup)
-                print(f'Категория: {category}')
+                # print(f'Категория: {category}')
                 phones = self.get_phones()
                 # phone = self.soup_data.get_phone(soup)
-                print(f'Номер: {phones}')
+                # print(f'Номер: {phones}')
                 station = self.soup_data.get_station(soup)
-                print(f'Станция: {station}')
+                # print(f'Станция: {station}')
 
                 if (len(link)) != 0:
                     parsed_url = urlparse(link)
@@ -80,6 +82,7 @@ class Parser:
                 if len(outputs) % 100 == 0 or org_id == len(urls) or org_id == 5:
                     print('Сохранение...')
                     table_exel(outputs)
+                    table_json(outputs)
                     print('Сохранено!')
                 print(f'[INFO] {org_id} | {len(urls)} | {((org_id / len(urls)) * 100):.3f}%')
 
@@ -104,6 +107,7 @@ class Parser:
                 parent_handle = self.driver.window_handles[0]
         print('Сохранение...')
         table_exel(outputs)
+        table_json(outputs)
         print('Сохранено!')
         self.driver.quit()
 
@@ -143,7 +147,7 @@ class CardSearcher:
         hrefs_district = []
         # Запрос
         request = city + ' ' + district + ' ' + type_org_ru
-        print(request)
+        # print(request)
         sleep(0.5)
         find_button = self.driver.find_element(By.CLASS_NAME, '_1gvu1zk')
         find_button.send_keys(request, Keys.ENTER)
@@ -194,14 +198,15 @@ class CardSearcher:
         return fresh_firms
 
 
-def update_list():
+def update_list(type_org_arg):
+    cur_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
     fresh_firms_list = {}
-    for type_org in ["vape"]:
+    for type_org in [type_org_arg]:
         i = 0
         driver = webdriver.Chrome()
         grabber = CardSearcher(driver)
         for district in districts:
-            # for district in ['Район сокол']:
+        # for district in ['Район сокол']:
             i += 1
             print(f"[INFO] Район: {i}/{len(districts)}")
             fresh_firms = grabber.check_new_firm(city="Москва", district=district,
@@ -213,15 +218,16 @@ def update_list():
 
     with open(f"fresh_firms_dict.json", 'w') as file:
         json.dump(fresh_firms_list, file, indent=1, ensure_ascii=False)
-    with open(f"backups/fresh_firms_dict_{cur_time}.json", 'w') as file:
-        json.dump(fresh_firms_list, file, indent=1, ensure_ascii=False)
-
+    if len(fresh_firms_list) != 0:
+        with open(f"backups/fresh_firms_dict_{cur_time}.json", 'w') as file:
+            json.dump(fresh_firms_list, file, indent=1, ensure_ascii=False)
     if len(fresh_firms_list) != 0:
         print(f'[INFO] Добавлено записей: {len(fresh_firms_list)}')
     else:
         print("[INFO] Новых записей не найдено.")
 
 
+# Сбор данных по ссылкам
 def parse_info():
     try:
         with open('fresh_firms_dict.json') as file:
@@ -238,10 +244,14 @@ def parse_info():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Simple script with argument.")
+    parser.add_argument("arg", type=str, help="An argument for the script.")
+    args = parser.parse_args()
+    arg = args.arg
     start_time = time()
-    cur_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
+
     # first_run()
-    update_list()
+    # update_list(arg)
     parse_info()
 
     end_time = time()

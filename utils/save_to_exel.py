@@ -1,6 +1,8 @@
+import datetime
+
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from metro_stations import *
+from utils.metro_stations import *
 
 
 def table_exel(data):
@@ -92,6 +94,6 @@ def table_exel(data):
                 if any(station in row.value for station in branch):
                     row.fill = fill
                     break
-
+    cur_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
     # Сохраняем файл
-    wb.save("Table.xlsx")
+    wb.save(f"Excels/Table_{cur_time}.xlsx")
