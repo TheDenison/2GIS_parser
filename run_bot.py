@@ -1,7 +1,11 @@
+import asyncio
 import logging
 
 import aiofiles
+
 from aiogram.utils.markdown import hbold
+from telegram.error import TimedOut, RetryAfter
+
 from card_finder import *
 from tg_bot.auth_tg import *
 from telegram import Update, ReplyKeyboardMarkup
@@ -44,7 +48,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     msg = ""
     for key, value in type_org_mapping.items():
         if value != "":
-            msg += f"{hbold(key)}: {value}\n"
+            msg += f"<code>{key}</code>: {value}\n"
     await update.message.reply_text("Введи одно ключевое слово из списка (например: flowers)", parse_mode='HTML')
     await update.message.reply_text(msg, parse_mode='HTML')
 
@@ -75,8 +79,8 @@ async def process_user_input(update: Update, context: CallbackContext, input_wor
     print(f"Запрос: {input_word}")
     await update.message.reply_text(f"<b>Поиск запущен...</b>", parse_mode='HTML')
     try:
-        update_list(input_word)
-        parse_info()
+        # update_list(input_word)
+        # parse_info()
         await json_print(update, context)
     except Exception as ex:
         # Отправка ошибки пользователю
@@ -98,7 +102,23 @@ async def json_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for key, value in entry.items():
             if value != "":
                 msg += f"{hbold(key)}: {value}\n"
-        await update.message.reply_text(msg, parse_mode='HTML')
+        max_retries = 10  # максимальное количество попыток
+        for _ in range(max_retries):
+            try:
+                await update.message.reply_text(msg, parse_mode='HTML')
+                break  # если сообщение отправлено успешно, выходим из цикла
+            except RetryAfter as e:
+                print(e)
+                print("Превышен лимит отправки сообщений. Ожидание: 12 сек.")
+                await asyncio.sleep(10 + 2)
+            except TimedOut:
+                print("Время ожидания истекло. Повторная попытка отправить сообщение...")
+                await asyncio.sleep(5)  # небольшая задержка перед следующей попыткой
+        else:
+            # Этот блок будет выполнен, если цикл завершился без "break", т.е. после всех попыток
+            print(f"Не удалось отправить сообщение после {max_retries} попыток.")
+            await update.message.reply_text("Ошибка при отправке данных. Попробуйте позже.", parse_mode='HTML')
+            return
     await update.message.reply_text("Поиск завершен", parse_mode='HTML')
 
 
