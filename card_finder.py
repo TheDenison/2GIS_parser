@@ -26,7 +26,7 @@ class Parser:
         self.driver = driver
         self.soup_data = SoupContent()
 
-    def host(self, urls):
+    def host(self, urls, chat_id):
         self.driver.maximize_window()
         self.driver.get('https://2gis.ru/moscow')
         parent_handle = self.driver.window_handles[0]
@@ -81,7 +81,7 @@ class Parser:
                 outputs.append(output)
                 if len(outputs) % 100 == 0 or org_id == len(urls) or org_id == 5:
                     print('Сохранение...')
-                    table_exel(outputs)
+                    table_exel(outputs, chat_id)
                     table_json(outputs)
                     print('Сохранено!')
                 print(f'[INFO] {org_id} | {len(urls)} | {((org_id / len(urls)) * 100):.3f}%')
@@ -106,7 +106,7 @@ class Parser:
                 self.driver.get('https://2gis.ru/moscow')
                 parent_handle = self.driver.window_handles[0]
         print('Сохранение...')
-        table_exel(outputs)
+        table_exel(outputs, chat_id)
         table_json(outputs)
         print('Сохранено!')
         self.driver.quit()
@@ -228,7 +228,7 @@ def update_list(type_org_arg):
 
 
 # Сбор данных по ссылкам
-def parse_info():
+def parse_info(chat_id="1"):
     try:
         with open('fresh_firms_dict.json') as file:
             firm_list = json.load(file)
@@ -240,7 +240,7 @@ def parse_info():
     for k, v in firm_list.items():
         urls.append(f"{v['url']}")
     print(f"Всего ссылок: {len(urls)}")
-    parser.host(urls)
+    parser.host(urls, chat_id)
 
 
 if __name__ == '__main__':

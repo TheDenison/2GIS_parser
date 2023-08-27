@@ -49,13 +49,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     for key, value in type_org_mapping.items():
         if value != "":
             msg += f"<code>{key}</code>: {value}\n"
-    await update.message.reply_text("Введи одно ключевое слово из списка (например: flowers)", parse_mode='HTML')
+    await update.message.reply_text("Введите одно ключевое слово из списка (например: flowers)", parse_mode='HTML')
     await update.message.reply_text(msg, parse_mode='HTML')
 
 
 async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Отправить сообщение с просьбой ввести строку и установить состояние ожидания"""
-    await update.message.reply_text("Пожалуйста, введите ключевое слово из списка (/help):")
+    await update.message.reply_text("Пожалуйста, введите ключевое слово из списка (/help)")
     text = update.message.from_user
     print(text)
     return text
@@ -64,23 +64,27 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_user_input(update: Update, context: CallbackContext) -> None:
     """Получить слово от пользователя и передать его в другую функцию."""
     user_input = update.message.text
+    print(f'[Сообщение] {update.message.from_user["first_name"]}: {user_input}')
+    user_input = user_input.lower().split()
     valid_inputs = [key for key in type_org_mapping.keys()]
 
-    if user_input not in valid_inputs:
-        await update.message.reply_text("Неверный ввод. Пожалуйста, попробуйте снова.")
-        await run(update, context)
-    else:
-        await process_user_input(update, context, user_input)
+    for word in user_input:
+        if word in valid_inputs:
+            await process_user_input(update, context, word)
+        else:
+            await update.message.reply_text(f"Неверный ввод. '{word}' отсутсвует в списке. Пожалуйста, попробуйте снова.")
+            await run(update, context)
 
 
 async def process_user_input(update: Update, context: CallbackContext, input_word: str) -> None:
     """Обработка слова, введенного пользователем."""
     # Здесь вы можете добавить логику обработки слова
     print(f"Запрос: {input_word}")
-    await update.message.reply_text(f"<b>Поиск запущен...</b>", parse_mode='HTML')
+    await update.message.reply_text(f"Поиск запущен...", parse_mode='HTML')
     try:
-        # update_list(input_word)
-        # parse_info()
+        update_list(input_word)
+        await update.message.reply_text("Идет сбор данных...", parse_mode='HTML')
+        parse_info(update.message.chat_id)
         await json_print(update, context)
     except Exception as ex:
         # Отправка ошибки пользователю
@@ -119,7 +123,16 @@ async def json_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print(f"Не удалось отправить сообщение после {max_retries} попыток.")
             await update.message.reply_text("Ошибка при отправке данных. Попробуйте позже.", parse_mode='HTML')
             return
+    # Отправка exel таблицы пользователю
+    try:
+        async with aiofiles.open(f'Excels/Table_{update.message.chat_id}.xlsx', 'rb') as excel_file:
+            data = await excel_file.read()
+            await update.message.reply_text("Все эти найденные точки в виде Excel таблицы:", parse_mode='HTML')
+            await context.bot.send_document(update.message.chat_id, document=data, filename=f"Таблица_{update.message.chat_id}.xlsx")
+    except Exception as ex:
+        print(ex)
     await update.message.reply_text("Поиск завершен", parse_mode='HTML')
+    print("Поиск закончился")
 
 
 def main(tkn):

@@ -67,11 +67,12 @@ class SoupContent(object):
         try:
             for a in soup_content.find_all('a', {'class': '_1rehek'}):
                 link_text = a.text
-                # Проверяем, не содержит ли текст ссылки http://, https:// или www.
-                for s in SITE_PATTERNS:
-                    if s in link_text:
-                        website = link_text
-                        break
+                if " " not in link_text:
+                    # Проверяем, не содержит ли текст ссылки http://, https:// или www.
+                    for s in SITE_PATTERNS:
+                        if s in link_text:
+                            website = link_text
+                            break
             return website
         except Exception:
             return ""

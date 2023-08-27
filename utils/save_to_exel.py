@@ -5,7 +5,7 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from utils.metro_stations import *
 
 
-def table_exel(data):
+def table_exel(data, chat_id):
     # Создание новой книги и листа
     wb = Workbook()
     ws = wb.active
@@ -97,3 +97,5 @@ def table_exel(data):
     cur_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
     # Сохраняем файл
     wb.save(f"Excels/Table_{cur_time}.xlsx")
+    if chat_id != "1":
+        wb.save(f"Excels/Table_{chat_id}.xlsx")
