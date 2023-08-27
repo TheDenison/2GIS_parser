@@ -5,7 +5,6 @@ import aiofiles
 
 from aiogram.utils.markdown import hbold
 from telegram.error import TimedOut, RetryAfter
-
 from card_finder import *
 from tg_bot.auth_tg import *
 from telegram import Update, ReplyKeyboardMarkup
@@ -80,19 +79,19 @@ async def process_user_input(update: Update, context: CallbackContext, input_wor
     """Обработка слова, введенного пользователем."""
     # Здесь вы можете добавить логику обработки слова
     print(f"Запрос: {input_word}")
-    await update.message.reply_text(f"Поиск запущен...", parse_mode='HTML')
+    await update.message.reply_text(f"Поиск по запросу {[input_word]} запущен...", parse_mode='HTML')
     try:
         update_list(input_word)
-        await update.message.reply_text("Идет сбор данных...", parse_mode='HTML')
+        await update.message.reply_text(f"Идет сбор данных...", parse_mode='HTML')
         parse_info(update.message.chat_id)
-        await json_print(update, context)
+        await json_print(update, context, input_word)
     except Exception as ex:
         # Отправка ошибки пользователю
         print(ex)
         await update.message.reply_text(f"Произошла ошибка, поиск прерван")
 
 
-async def json_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def json_print(update: Update, context: ContextTypes.DEFAULT_TYPE, input_word):
     # Загрузка данных из JSON-файла
     async with aiofiles.open("Excels/data.json", mode="r", encoding="utf-8") as f:
         content = await f.read()
@@ -127,12 +126,12 @@ async def json_print(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         async with aiofiles.open(f'Excels/Table_{update.message.chat_id}.xlsx', 'rb') as excel_file:
             data = await excel_file.read()
-            await update.message.reply_text("Все эти найденные точки в виде Excel таблицы:", parse_mode='HTML')
+            await update.message.reply_text("Найденные точки в виде Excel таблицы:", parse_mode='HTML')
             await context.bot.send_document(update.message.chat_id, document=data, filename=f"Таблица_{update.message.chat_id}.xlsx")
     except Exception as ex:
         print(ex)
-    await update.message.reply_text("Поиск завершен", parse_mode='HTML')
-    print("Поиск закончился")
+    await update.message.reply_text(f"Поиск по {input_word} завершен", parse_mode='HTML')
+    print(f"Поиск по {input_word} закончился")
 
 
 def main(tkn):
