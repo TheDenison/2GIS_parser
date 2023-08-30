@@ -104,7 +104,7 @@ async def json_print(update: Update, context: ContextTypes.DEFAULT_TYPE, input_w
         msg = ""
         for key, value in entry.items():
             if value != "":
-                msg += f"{hbold(key)}: {value}\n"
+                msg += f"{hbold(key)}: <code>{value}</code>\n"
         max_retries = 10  # максимальное количество попыток
         for _ in range(max_retries):
             try:
@@ -127,7 +127,7 @@ async def json_print(update: Update, context: ContextTypes.DEFAULT_TYPE, input_w
         async with aiofiles.open(f'Excels/Table_{update.message.chat_id}.xlsx', 'rb') as excel_file:
             data = await excel_file.read()
             await update.message.reply_text("Найденные точки в виде Excel таблицы:", parse_mode='HTML')
-            await context.bot.send_document(update.message.chat_id, document=data, filename=f"Таблица_{update.message.chat_id}.xlsx")
+            await context.bot.send_document(update.message.chat_id, document=data, filename=f"Таблица_{input_word}.xlsx")
     except Exception as ex:
         print(ex)
     await update.message.reply_text(f"Поиск по {input_word} завершен", parse_mode='HTML')
