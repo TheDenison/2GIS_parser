@@ -83,7 +83,7 @@ def table_exel(data, chat_id):
             try:
                 if len(str(cell.value)) > max_length:
                     max_length = len(cell.value)
-            except:
+            except Exception:
                 pass
         adjusted_width = (max_length + 2)
         ws.column_dimensions[column[0].column_letter].width = adjusted_width
@@ -94,6 +94,58 @@ def table_exel(data, chat_id):
                 if any(station in row.value for station in branch):
                     row.fill = fill
                     break
+    try:
+        # Проверка окраски оценки
+        def interpolate_color(color1, color2, fraction):
+            r1, g1, b1 = color1
+            r2, g2, b2 = color2
+
+            new_r = int(r1 + (r2 - r1) * fraction)
+            new_g = int(g1 + (g2 - g1) * fraction)
+            new_b = int(b1 + (b2 - b1) * fraction)
+
+            return new_r, new_g, new_b
+
+        def get_color_for_value(value):
+            RED = (255, 0, 0)
+            ORANGE = (255, 165, 0)
+            YELLOW = (255, 255, 0)
+            LIGHT_GREEN = (124, 252, 0)
+            GREEN = (0, 255, 0)
+
+            value = float(value)
+
+            if value <= 1.5:
+                return RED
+            elif value <= 2:
+                return interpolate_color(RED, ORANGE, value - 1.5)
+            elif value <= 2.5:
+                return ORANGE
+            elif value < 3:
+                return interpolate_color(ORANGE, YELLOW, value - 2.5)
+            elif value <= 3.5:
+                return YELLOW
+            elif value <= 4:
+                return interpolate_color(YELLOW, LIGHT_GREEN, value - 3.5)
+            elif value <= 4.5:
+                return LIGHT_GREEN
+            elif value < 5:
+                return interpolate_color(LIGHT_GREEN, GREEN, value - 4.5)
+            else:
+                return GREEN
+
+        def is_empty(cell_value):
+            return cell_value is None or str(cell_value).strip() == ""
+
+        # Пропустк заголовка и проход по столбцу "J"
+        for cell in ws['J'][1:]:
+            if not is_empty(cell.value):
+                r, g, b = get_color_for_value(cell.value)
+                fill_color = f"{r:02X}{g:02X}{b:02X}"
+                cell.fill = PatternFill(start_color=fill_color, end_color=fill_color, fill_type="solid")
+    except Exception as e:
+        print(e)
+
     cur_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
     # Сохраняем файл
     wb.save(f"Excels/Table_{cur_time}.xlsx")

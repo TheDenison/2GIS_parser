@@ -15,16 +15,29 @@ from telegram.ext import filters, Application, CallbackQueryHandler, CommandHand
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
-# set higher logging level for httpx to avoid all GET and POST requests being logged
+# set a higher logging level for httpx to avoid all GET and POST requests being logged
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+LOG_FORMAT = "%(asctime)s - %(message)s"
+
+# Обработчик для записи логов в файл
+file_handler = logging.FileHandler("logs.log")
+file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+logger.addHandler(file_handler)
+
+# Обработчик для вывода логов в консоль
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+logger.addHandler(console_handler)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends a message with three inline buttons attached."""
     user = update.message.from_user
     logger.info("Пользователь %s начал использовать бота.", user.first_name)
+    logger.info(f"[USER INFO] {user}")
 
     # Создание клавиатуры
     keyboard = [
@@ -63,7 +76,7 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_user_input(update: Update, context: CallbackContext) -> None:
     """Получить слово от пользователя и передать его в другую функцию."""
     user_input = update.message.text
-    print(f'[Сообщение] {update.message.from_user["first_name"]}: {user_input}')
+    logger.info(f'[Сообщение] {update.message.from_user["first_name"]}: {user_input}')
     user_input = user_input.lower().split()
     valid_inputs = [key for key in type_org_mapping.keys()]
 
@@ -71,14 +84,15 @@ async def handle_user_input(update: Update, context: CallbackContext) -> None:
         if word in valid_inputs:
             await process_user_input(update, context, word)
         else:
-            await update.message.reply_text(f"Неверный ввод. '{word}' отсутсвует в списке. Пожалуйста, попробуйте снова.")
+            await update.message.reply_text(f"Неверный ввод. '{word}' отсутсвует в списке."
+                                            f"Пожалуйста, попробуйте снова.")
             await run(update, context)
 
 
 async def process_user_input(update: Update, context: CallbackContext, input_word: str) -> None:
     """Обработка слова, введенного пользователем."""
     # Здесь вы можете добавить логику обработки слова
-    print(f"Запрос: {input_word}")
+    logger.info(f"Запрос: {input_word}")
     await update.message.reply_text(f"Поиск по запросу {[input_word]} запущен...", parse_mode='HTML')
     try:
         update_list(input_word)
@@ -112,14 +126,14 @@ async def json_print(update: Update, context: ContextTypes.DEFAULT_TYPE, input_w
                 break  # если сообщение отправлено успешно, выходим из цикла
             except RetryAfter as e:
                 print(e)
-                print("Превышен лимит отправки сообщений. Ожидание: 12 сек.")
+                logger.info("Превышен лимит отправки сообщений. Ожидание: 12 сек.")
                 await asyncio.sleep(10 + 2)
             except TimedOut:
-                print("Время ожидания истекло. Повторная попытка отправить сообщение...")
+                logger.info("Время ожидания истекло. Повторная попытка отправить сообщение...")
                 await asyncio.sleep(5)  # небольшая задержка перед следующей попыткой
         else:
             # Этот блок будет выполнен, если цикл завершился без "break", т.е. после всех попыток
-            print(f"Не удалось отправить сообщение после {max_retries} попыток.")
+            logger.info(f"Не удалось отправить сообщение после {max_retries} попыток.")
             await update.message.reply_text("Ошибка при отправке данных. Попробуйте позже.", parse_mode='HTML')
             return
     # Отправка exel таблицы пользователю
@@ -127,11 +141,12 @@ async def json_print(update: Update, context: ContextTypes.DEFAULT_TYPE, input_w
         async with aiofiles.open(f'Excels/Table_{update.message.chat_id}.xlsx', 'rb') as excel_file:
             data = await excel_file.read()
             await update.message.reply_text("Найденные точки в виде Excel таблицы:", parse_mode='HTML')
-            await context.bot.send_document(update.message.chat_id, document=data, filename=f"Таблица_{input_word}.xlsx")
+            await context.bot.send_document(
+                update.message.chat_id, document=data, filename=f"Таблица_{input_word}.xlsx")
     except Exception as ex:
         print(ex)
     await update.message.reply_text(f"Поиск по {input_word} завершен", parse_mode='HTML')
-    print(f"Поиск по {input_word} закончился")
+    logger.info(f"Поиск по {input_word} закончился")
 
 
 def main(tkn):

@@ -43,29 +43,18 @@ class Parser:
 
                 org_id += 1
                 name = self.soup_data.get_name(soup)
-                # print(f"название: {name}")
                 address = self.soup_data.get_address(soup)
-                # print(f'адрес: {address}')
                 link = website = self.soup_data.get_website(soup)
-                # print(f'сайт: {website}')
                 twogis = self.driver.current_url
-                # print(f'сслыка: {twogis}')
                 rating = self.soup_data.get_rating(soup)
-                # print(f'Оценка: {rating}')
                 email = self.soup_data.get_email(soup)
-                # print(f'Емаил: {email}')
                 branch = self.soup_data.get_branch(soup)
-                # print(f'Филиалы: {branch}')
                 ip_inn = ''
                 reviews = self.soup_data.get_reviews(soup)
-                # print(f'Отзывы: {reviews}')
                 category = self.soup_data.get_category(soup)
-                # print(f'Категория: {category}')
                 phones = self.get_phones()
                 # phone = self.soup_data.get_phone(soup)
-                # print(f'Номер: {phones}')
                 station = self.soup_data.get_station(soup)
-                # print(f'Станция: {station}')
 
                 if (len(link)) != 0:
                     parsed_url = urlparse(link)
