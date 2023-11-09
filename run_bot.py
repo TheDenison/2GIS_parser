@@ -23,7 +23,7 @@ logger.setLevel(logging.INFO)
 LOG_FORMAT = "%(asctime)s - %(message)s"
 
 # Обработчик для записи логов в файл
-file_handler = logging.FileHandler("logs.log")
+file_handler = logging.FileHandler("logs.log", encoding="utf-8")
 file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
 logger.addHandler(file_handler)
 
@@ -92,7 +92,7 @@ async def handle_user_input(update: Update, context: CallbackContext) -> None:
 async def process_user_input(update: Update, context: CallbackContext, input_word: str) -> None:
     """Обработка слова, введенного пользователем."""
     # Здесь вы можете добавить логику обработки слова
-    logger.info(f"Запрос: {input_word}")
+    logger.info(f"[USER INFO] Запрос:  {update.message.from_user} {input_word}")
     await update.message.reply_text(f"Поиск по запросу {[input_word]} запущен...", parse_mode='HTML')
     try:
         update_list(input_word)
