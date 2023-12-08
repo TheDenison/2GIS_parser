@@ -159,7 +159,7 @@ def main(tkn):
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_user_input))
 
     # executor.start_polling(dp, skip_updates=True)
-    # Run the bot until the user presses Ctrl-C
+    # Run the bot until the user presses Ctrl-C 654456
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
