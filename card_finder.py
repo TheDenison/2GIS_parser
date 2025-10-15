@@ -11,9 +11,10 @@ from soup_content import SoupContent
 from bs4 import BeautifulSoup
 from time import sleep, time
 from selenium import webdriver
-from selenium.webdriver import Keys
+from selenium.webdriver import Keys, ActionChains
 from selenium.webdriver.common.by import By
 from utils.constants import districts, type_org_mapping
+from tqdm import tqdm
 
 
 def filter_links(hrefs):
@@ -32,13 +33,21 @@ class Parser:
         parent_handle = self.driver.window_handles[0]
         org_id = 0
         outputs = []
-        for firm_url in urls:
+        for firm_url in tqdm(urls, desc="Ссылок пройдено"):
             try:
 
                 self.driver.execute_script(f'window.open("{firm_url}","org_tab");')
                 child_handle = [x for x in self.driver.window_handles if x != parent_handle][0]
                 self.driver.switch_to.window(child_handle)
                 sleep(random.uniform(0.2, 0.8))
+                try:
+                    self.driver.find_element(By.CLASS_NAME, "_1tkj2hw").click()
+                    # actions = ActionChains(self.driver)
+                    # actions.move_to_element(element).perform()  # наведение курсора
+                    # actions.click(element)
+                    sleep(random.uniform(0.1, 0.3))  # держим "курсор" на элементе 3 секунды
+                except Exception:
+                    pass
                 soup = BeautifulSoup(self.driver.page_source, "lxml")
 
                 org_id += 1
@@ -52,28 +61,28 @@ class Parser:
                 ip_inn = ''
                 reviews = self.soup_data.get_reviews(soup)
                 category = self.soup_data.get_category(soup)
-                phones = self.get_phones()
-                # phone = self.soup_data.get_phone(soup)
-                station = self.soup_data.get_station(soup)
+                # phones = self.get_phones()
+                phones = self.soup_data.get_phone(soup)
+                # station = self.soup_data.get_station(soup)
 
                 if (len(link)) != 0:
                     parsed_url = urlparse(link)
                     if not parsed_url.scheme:
                         link = 'https://' + link
                     ip_inn = self.soup_data.get_ip_inn(link)
-                    if ip_inn == None:
+                    if ip_inn is None:
                         ip_inn = ''
-                    print(f'ИН/ИНН: {ip_inn}\n')
+                    # print(f'ИН/ИНН: {ip_inn}\n')
 
-                output = [org_id, category, name, branch, address, website, ip_inn, station, twogis,
+                output = [org_id, category, name, branch, address, website, ip_inn, twogis,
                           rating, reviews, phones, email]
                 outputs.append(output)
-                if len(outputs) % 100 == 0 or org_id == len(urls) or org_id == 5:
+                if len(outputs) % 100 == 0 or org_id == len(urls) or org_id == 10:
                     print('Сохранение...')
                     table_exel(outputs, chat_id)
                     table_json(outputs)
                     print('Сохранено!')
-                print(f'[INFO] {org_id} | {len(urls)} | {((org_id / len(urls)) * 100):.3f}%')
+                # print(f'[INFO] {org_id} | {len(urls)} | {((org_id / len(urls)) * 100):.3f}%')
 
                 if len(outputs) % 50 == 0:
                     self.driver.quit()
@@ -138,21 +147,25 @@ class CardSearcher:
         request = city + ' ' + district + ' ' + type_org_ru
         # print(request)
         sleep(0.5)
-        find_button = self.driver.find_element(By.CLASS_NAME, '_1gvu1zk')
+
+        find_button = self.driver.find_element(By.XPATH,
+                                               "//*[@id='root']/div/div/div[1]/div[1]/div[3]/div/div/div[1]/div/div/div/div/div[2]/form/div/input")
+        # find_button = self.driver.find_element(By.CLASS_NAME, '_1gvu1zk')
         find_button.send_keys(request, Keys.ENTER)
         sleep(0.5)
         try:
             # включение сортировки по новизне
-            find_sort = self.driver.find_element(By.CSS_SELECTOR, 'input._1e4yjns[type="text"][placeholder="Сортировка"]')
+            find_sort = self.driver.find_element(By.XPATH,
+                                                 '//*[@id="root"]/div/div/div[1]/div[1]/div[3]/div/div/div[2]/div/div/div/div[2]/div[1]/div/div/div/div/div/div/div[2]/div/div/div/div/div/div/ul/li[1]/div/div[1]/div/input')
             find_sort.send_keys('По новизне', Keys.ENTER)
 
-        # sleep(0.3)
-        # # поиск количества точек
-        # find_places = self.driver.find_element(By.XPATH, '//div[@class="_nude0k3"]/a[@class="_rdxuhv3"]').text
-        # number_places = int(''.join(filter(str.isdigit, find_places)))
-        # print(f'Места: {number_places}')
+            # sleep(0.3)
+            # # поиск количества точек
+            # find_places = self.driver.find_element(By.XPATH, '//div[@class="_nude0k3"]/a[@class="_rdxuhv3"]').text
+            # number_places = int(''.join(filter(str.isdigit, find_places)))
+            # print(f'Места: {number_places}')
 
-        # поиск и сбор ссылок на компании
+            # поиск и сбор ссылок на компании
             while '/filters/sort%3Dopened_time' not in self.driver.current_url:
                 sleep(0.001)
         except Exception:
@@ -194,10 +207,10 @@ def update_list(type_org_arg):
         i = 0
         driver = webdriver.Chrome()
         grabber = CardSearcher(driver)
-        for district in districts:
-        # for district in ['Район сокол']:
+        for district in tqdm(districts, desc="Районов пройдено"):
+            # for district in ['Район сокол']:
             i += 1
-            print(f"[INFO] Район: {i}/{len(districts)}")
+            # print(f"[INFO] Район: {i}/{len(districts)}")
             fresh_firms = grabber.check_new_firm(city="Москва", district=district,
                                                  type_org_ru=type_org_mapping[type_org],
                                                  type_org=type_org)

@@ -21,7 +21,7 @@ class SoupContent(object):
     def get_name(self, soup_content):
         name = ''
         try:
-            for data in soup_content.find_all("h1", {"class": "_tvxwjf"}):
+            for data in soup_content.find_all("h1", {"class": "_1x89xo5"}):
                 name = data.text
             return name
         except Exception:
@@ -29,13 +29,12 @@ class SoupContent(object):
 
     def get_phone(self, soup_content):
         try:
-            phones = []
-            for data1 in soup_content.find_all('div', {"class": "_b0ke8"}):
-                print(data1)
-                for data in soup_content.find_all('a', {"class": "_2lcm958"}, href=True):
-                    if data['href'].startswith('tel:'):
-                        phones.append(data['href'].replace("tel:", ""))
-            return '\n'.join(phones)
+            phones = {
+                link['href'].replace("tel:", "").strip()
+                for link in soup_content.find_all('a', href=True)
+                if link['href'].startswith('tel:')
+            }
+            return '\n'.join(phones) if phones else ""
         except Exception:
             print('Не нашло телефоны')
             return ""
@@ -54,7 +53,16 @@ class SoupContent(object):
 
     def get_address(self, soup_content):
         try:
-            text = [outer.find('a', class_='_2lcm958').text for outer in soup_content.find_all('span', class_='_14quei') if outer.find('a', class_='_2lcm958')]
+            # Сначала пробуем найти в "_14quei"
+            text = [outer.find('a', class_='_2lcm958').text
+                    for outer in soup_content.find_all('span', class_='_14quei')
+                    if outer.find('a', class_='_2lcm958')]
+
+            # Если не нашли, пробуем "_oqoid"
+            if not text:
+                text = [outer.find('a', class_='_2lcm958').text
+                        for outer in soup_content.find_all('span', class_='_oqoid')
+                        if outer.find('a', class_='_2lcm958')]
             text = ' '.join(text)
             text = text.replace("\u200B", "").replace(u"\xa0", u" ")
             address = text
@@ -81,7 +89,8 @@ class SoupContent(object):
         rating = ""
         try:
             for data in soup_content.find_all("div", {"class": "_y10azs"}):
-                rating += data.getText()
+                rating += data.getText().replace(",", ".")
+            rating = float(rating)
             return rating
         except Exception:
             return ""
@@ -126,13 +135,20 @@ class SoupContent(object):
 
     def get_branch(self, soup_content):
         branch = ""
-        pattern = re.compile(r"\d+ филиал(а|ов)?")
+        pattern = re.compile(r"филиал(а|ов)?")
         try:
-            for span in soup_content.find_all("span", {'class': '_er2xx9'}):
-                for a in span.find_all('a', {'class': '_1rehek'}):
-                    if pattern.search(a.text):
-                        branch = a.text
-                        break
+            # Список классов для поиска (в порядке приоритета)
+            span_classes = ['_14quei', '_oqoid', '_er2xx9']
+            for class_name in span_classes:
+                if not branch:  # Если еще не нашли
+                    for span in soup_content.find_all("span", {'class': class_name}):
+                        for a in span.find_all('a', {'class': '_1rehek'}):
+                            if pattern.search(a.text):
+                                branch = a.text
+                                branch = branch.replace("\u200B", "").replace(u"\xa0", u" ")
+                                break  # Выходим из цикла, если нашли
+                        if branch:  # Если нашли в текущем классе, дальше не ищем
+                            break
             return branch
         except Exception:
             return ""
@@ -194,6 +210,7 @@ class SoupContent(object):
                         r'(ИП|Индивидуальный предприниматель)[ :]?(?:(?:[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+)|(?:[А-ЯЁ][а-яё]+ [А-ЯЁ]\.(?:\s[А-ЯЁ]\.|[А-ЯЁ]\.))|(?:[А-ЯЁ][а-яё]+))', )  # re.IGNORECASE
 
                     inn_pattern = re.compile(r'ИНН[:/]?[ ]?(\d{10,12})')
+                    # inn_pattern = re.compile(r'ИНН\s*[:\-]?\s*(\d{10})(?!\d)')
 
                     found_ip_elements = soup(text=ip_pattern)
                     found_inn_elements = soup(text=inn_pattern)
@@ -206,7 +223,7 @@ class SoupContent(object):
                             match = re.search(ip_pattern, element)
                             if match:
                                 ip_text = match.group()
-                                ip = ip_text
+                                ip = ip_text.replace("Индивидуальный предприниматель", "ИП")
                                 # print(ip)
                             break
 

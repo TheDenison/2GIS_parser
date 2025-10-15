@@ -79,6 +79,11 @@ async def handle_user_input(update: Update, context: CallbackContext) -> None:
     logger.info(f'[Сообщение] {update.message.from_user["first_name"]}: {user_input}')
     user_input = user_input.lower().split()
     valid_inputs = [key for key in type_org_mapping.keys()]
+    # белый список
+    user_id = update.effective_user.id
+    if user_id not in ALLOWED_USER_IDS:
+        await update.message.reply_text("У вас нет доступа к этой команде.")
+        return
 
     for word in user_input:
         if word in valid_inputs:
